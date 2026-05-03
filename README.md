@@ -7,14 +7,16 @@ BioVault is a cloud-native, multi-modal biometric authentication system that fus
 
 ## Live links
 
+Production: **https://biovault.dmj.one**
+
 | Path | What |
 |------|------|
-| `/` | Live demo — enroll any subset of factors, then verify and watch the trust meter |
-| `/pitch` | Arrow-key pitch deck (12 slides, `←` `→` `Home` `End` `F`) |
-| `/report` | Capstone report (HTML, with TOC) |
-| `/report.docx` | Same report, downloadable Word version |
-| `/api/docs` | OpenAPI / Swagger UI |
-| `/health` | Liveness + store stats |
+| [`/`](https://biovault.dmj.one/) | Live demo — enroll any subset of factors, then verify and watch the trust meter |
+| [`/pitch`](https://biovault.dmj.one/pitch) | Arrow-key pitch deck (12 slides, `←` `→` `Home` `End` `F`) |
+| [`/report`](https://biovault.dmj.one/report) | Capstone report (HTML, with TOC) |
+| [`/report.docx`](https://biovault.dmj.one/report.docx) | Same report, downloadable Word version |
+| [`/api/docs`](https://biovault.dmj.one/api/docs) | OpenAPI / Swagger UI |
+| [`/health`](https://biovault.dmj.one/health) | Liveness + store stats |
 
 ## Why
 
