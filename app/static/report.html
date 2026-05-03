@@ -1,0 +1,648 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>BioVault — Capstone Project Report</title>
+<meta name="description" content="Capstone project report for BioVault, a multi-modal biometric security application by Lakshika Tanwar, B.Tech CSE Cloud Computing." />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" />
+<link rel="stylesheet" href="/static/css/report.css" />
+</head>
+<body>
+<div class="wrap">
+
+<aside class="toc" aria-label="Table of contents">
+  <h1>Contents</h1>
+  <nav id="toc">
+    <a href="#abstract">Abstract</a>
+    <a href="#chapter-1">1. Introduction &amp; Problem Definition</a>
+    <a href="#chapter-2">2. System Requirements</a>
+    <a href="#chapter-3">3. System Architecture &amp; Design</a>
+    <a href="#chapter-4">4. Technology Stack</a>
+    <a href="#chapter-5">5. Implementation</a>
+    <a href="#chapter-6">6. Algorithms &amp; Models</a>
+    <a href="#chapter-7">7. Testing</a>
+    <a href="#chapter-8">8. Results &amp; Performance</a>
+    <a href="#chapter-9">9. Deployment</a>
+    <a href="#chapter-10">10. Challenges &amp; Solutions</a>
+    <a href="#chapter-11">11. Conclusion &amp; Future Scope</a>
+    <a href="#viva">Viva-Voce Q&amp;A</a>
+    <a href="#refs">References</a>
+  </nav>
+</aside>
+
+<main class="doc">
+
+<section class="cover">
+  <div class="kicker">Capstone Project Report</div>
+  <h1>BioVault — Multi-Modal Biometric Security Application</h1>
+  <p style="font-size:18px;color:#a4b0d2;margin:0">Synopsis submitted for the partial fulfilment of the degree of <strong>Bachelor of Technology (CSE — Cloud Computing)</strong>.</p>
+  <div class="meta">
+    <div><strong>Student</strong> Lakshika Tanwar</div>
+    <div><strong>Registration #</strong> GF202220476</div>
+    <div><strong>Programme</strong> B.Tech CSE — Cloud Computing</div>
+    <div><strong>Semester</strong> VIII</div>
+    <div><strong>Institute</strong> Yogananda School of AI, Computers and Data Sciences</div>
+    <div><strong>University</strong> Shoolini University, Solan, H.P.</div>
+    <div><strong>Mentor</strong> [Capstone Mentor]</div>
+    <div><strong>Year</strong> 2025–2026</div>
+  </div>
+  <div class="dl-row">
+    <a class="btn-pill" href="/report.docx">Download .docx</a>
+    <a class="btn-pill" href="/">Open live demo</a>
+    <a class="btn-pill" href="/pitch">View pitch</a>
+    <a class="btn-pill" href="https://github.com/divyamohan1993/biovault" target="_blank" rel="noopener">Source on GitHub</a>
+  </div>
+</section>
+
+<section id="abstract">
+  <h2>Abstract</h2>
+  <p>
+    This capstone presents <strong>BioVault</strong>, a cloud-native, multi-modal biometric
+    authentication system designed to replace fragile password and OTP flows with a
+    continuous, risk-adaptive trust score. The application fuses four independent
+    factors — <em>facial recognition with blink-based liveness</em>, <em>voice
+    biometrics</em>, <em>keystroke dynamics</em>, and a <em>WebAuthn passkey</em> — each
+    contributing a calibrated score that is combined into a single trust value and mapped
+    to one of three actions: <code>ALLOW</code>, <code>STEP_UP</code>, or <code>DENY</code>.
+  </p>
+  <p>
+    All machine-learning inference runs entirely in the user's browser (face-api.js for
+    face descriptors, the Web Audio API for voice features, native event timing for
+    keystroke dynamics, and the W3C WebAuthn API for hardware passkeys). The Python
+    backend, built on FastAPI and deployed to <strong>Google Cloud Run in
+    asia-east1</strong> with a scale-to-zero configuration, performs only stateless
+    cryptographic verification and feature comparison. No raw audio, video, or PII ever
+    leaves the device, and templates are held only in volatile memory with a 30-minute
+    TTL — a deliberate <em>privacy-by-design</em> choice for the MVP.
+  </p>
+  <p>
+    The system was built end-to-end in a single sprint, validated against synthetic and
+    same-user test scenarios, and shipped as a public, fully reproducible repository with
+    one-command deployment. It serves as a working proof that strong, multi-factor,
+    privacy-preserving biometric auth can be delivered on commodity browsers and a
+    pay-per-millisecond serverless backend.
+  </p>
+</section>
+
+<section id="chapter-1">
+  <h2>1. Introduction &amp; Problem Definition</h2>
+  <h3>1.1 Background</h3>
+  <p>
+    The Verizon DBIR consistently attributes more than four-fifths of breaches to weak,
+    reused, or stolen passwords; SMS-OTP and TOTP improve the picture but remain
+    phishable and shareable. Single-modal biometrics (a face match, a fingerprint) close
+    some of that gap but fall to spoofing, presentation attacks, and irreversible loss
+    once the template leaks. The problem is not a missing factor — it is the absence of a
+    framework that <em>combines</em> several factors into a graded, contextual decision.
+  </p>
+  <h3>1.2 Problem statement</h3>
+  <p>
+    Design and implement a multi-modal biometric authentication system that
+    <strong>(a)</strong> performs all sensitive computation locally,
+    <strong>(b)</strong> stores only one-way feature vectors,
+    <strong>(c)</strong> fuses any subset of available factors into a calibrated trust
+    score, and <strong>(d)</strong> deploys on a serverless, scale-to-zero platform
+    suitable for an Indian-context privacy and cost profile.
+  </p>
+  <h3>1.3 Target users</h3>
+  <ul>
+    <li><strong>End users</strong> seeking phishing-resistant login on consumer apps (banking, government services, education).</li>
+    <li><strong>Developers</strong> who want to add strong auth to a web product without managing biometric infrastructure.</li>
+    <li><strong>Compliance officers</strong> who need a defensible, DPDP-Act-aligned model where templates are revocable and minimal.</li>
+  </ul>
+  <h3>1.4 Objectives</h3>
+  <ul>
+    <li>Implement four working biometric modalities with calibrated scoring.</li>
+    <li>Provide a real-time risk decision with clear allow / step-up / deny semantics.</li>
+    <li>Run on a <code>min=0</code> Cloud Run service with sub-second cold starts.</li>
+    <li>Ship verifiable open-source code, a live demo, and a written report.</li>
+  </ul>
+  <h3>1.5 Scope of MVP</h3>
+  <div class="callout">
+    <strong>In scope:</strong> in-browser ML inference; stateless API; in-memory template
+    store; TTL-based eviction; live audit log; arrow-key pitch deck and public report.
+    <br /><br />
+    <strong>Out of scope (explicitly):</strong> persistent template storage, encrypted
+    template envelopes, multi-tenant administration, deepfake-resistant voice models,
+    advanced 3D liveness, mobile native SDKs.
+  </div>
+</section>
+
+<section id="chapter-2">
+  <h2>2. System Requirements</h2>
+  <h3>2.1 Functional</h3>
+  <table>
+    <thead><tr><th>ID</th><th>Requirement</th><th>Acceptance criteria</th></tr></thead>
+    <tbody>
+      <tr><td>F1</td><td>Create a demo user identity</td><td><code>POST /api/users</code> returns a unique id and label.</td></tr>
+      <tr><td>F2</td><td>Enroll a face descriptor with liveness</td><td>Browser captures a blink; 128-D L2-normalized vector is posted to <code>/api/face/enroll</code>.</td></tr>
+      <tr><td>F3</td><td>Verify a face descriptor</td><td><code>/api/face/verify</code> returns distance, score, pass/fail.</td></tr>
+      <tr><td>F4</td><td>Enroll and verify a voice template</td><td>18-D feature vector compared by cosine similarity.</td></tr>
+      <tr><td>F5</td><td>Enroll and verify keystroke timing</td><td>Manhattan distance on z-score-normalized timing vector.</td></tr>
+      <tr><td>F6</td><td>Register and authenticate a WebAuthn passkey</td><td>Standard W3C ceremony with origin- and challenge-bound proof.</td></tr>
+      <tr><td>F7</td><td>Compute aggregate trust + action</td><td><code>/api/risk/score</code> returns trust, risk, action, factor breakdown.</td></tr>
+      <tr><td>F8</td><td>Live audit feed</td><td><code>/api/events</code> exposes the last 500 events; the UI polls every 3 s.</td></tr>
+    </tbody>
+  </table>
+  <h3>2.2 Non-functional</h3>
+  <ul>
+    <li><strong>Performance</strong>: cold start &lt; 500 ms; per-modality verify p95 &lt; 50 ms.</li>
+    <li><strong>Availability</strong>: Cloud Run regional service with auto-restart.</li>
+    <li><strong>Security</strong>: HSTS, restrictive Permissions-Policy, no raw biometric data on the wire, per-request correlation IDs.</li>
+    <li><strong>Privacy</strong>: in-memory only; 30-minute TTL; user-initiated deletion.</li>
+    <li><strong>Accessibility</strong>: WCAG 2.2 AA on the demo UI; reduced-motion respected.</li>
+    <li><strong>Cost</strong>: zero idle cost on Cloud Run min=0; under ₹0.10 per 1 000 verifications.</li>
+  </ul>
+  <h3>2.3 Hardware / software</h3>
+  <table>
+    <thead><tr><th>Layer</th><th>Requirement</th></tr></thead>
+    <tbody>
+      <tr><td>Client</td><td>Modern browser with camera, microphone, and WebAuthn (Chrome 95+, Safari 16+, Firefox 113+, Edge 100+).</td></tr>
+      <tr><td>Network</td><td>HTTPS only; works on 3G with 1 MB initial payload.</td></tr>
+      <tr><td>Server</td><td>Cloud Run, 256 MiB RAM, 1 vCPU, autoscale 0–3, asia-east1.</td></tr>
+      <tr><td>Build</td><td>Python 3.12, Cloud Build, Docker, Artifact Registry.</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<section id="chapter-3">
+  <h2>3. System Architecture &amp; Design</h2>
+  <h3>3.1 High-level view</h3>
+  <pre>
+┌────────────────────────────────────────────────────────────────────────────┐
+│  Browser (untrusted)                                                       │
+│  ─────────────────────────────────────────────────────────────────────     │
+│   • face-api.js (TinyFaceDetector + landmark68 + recognition)              │
+│   • Web Audio API → 18-D voice features (FFT + Mel)                        │
+│   • keystroke dwell/flight timing capture                                  │
+│   • WebAuthn navigator.credentials.* ceremony                              │
+└────────────────────────────────────────────────────────────────────────────┘
+                                  │  TLS 1.3, JSON, x-correlation-id
+                                  ▼
+┌────────────────────────────────────────────────────────────────────────────┐
+│  Cloud Run · asia-east1 · min=0  (FastAPI / Pydantic v2 / NumPy)           │
+│  ─────────────────────────────────────────────────────────────────────     │
+│   /api/users        →  EphemeralStore (RLock-guarded)                      │
+│   /api/face/*       →  cosine + Euclidean against enrolled 128-D           │
+│   /api/voice/*      →  z-score cosine similarity                           │
+│   /api/keystroke/*  →  Manhattan distance, normalised                      │
+│   /api/passkey/*    →  py_webauthn (challenge stash + verify)              │
+│   /api/risk/score   →  weighted fusion + decision band                     │
+│   /api/events       →  ring-buffered audit log                             │
+│   structured JSON logs · GZip · HSTS · correlation IDs                     │
+└────────────────────────────────────────────────────────────────────────────┘
+  </pre>
+
+  <h3>3.2 Data model (in-memory)</h3>
+  <pre>
+UserRecord
+├── user_id, label, created_at, last_seen_at
+├── FaceTemplate(descriptor: float[128], liveness_passed: bool)
+├── VoiceTemplate(feature_vector: float[18])
+├── KeystrokeTemplate(passphrase: str, timing_vector: float[2N-1])
+└── PasskeyCredential(credential_id: bytes, public_key: bytes, sign_count: int)
+  </pre>
+
+  <h3>3.3 Sequence: multi-factor verify + decide</h3>
+  <pre>
+User → Browser : enroll &amp; later verify
+Browser → API  : POST /api/face/verify        →  {score, distance, passed}
+Browser → API  : POST /api/voice/verify       →  {score, passed}
+Browser → API  : POST /api/keystroke/verify   →  {score, passed}
+Browser → API  : POST /api/passkey/auth/*     →  {score=1.0, passed}
+Browser → API  : POST /api/risk/score         →  {trust, risk, action, factors}
+Browser ← API  : action ∈ {ALLOW, STEP_UP, DENY}
+  </pre>
+
+  <h3>3.4 Decision policy</h3>
+  <table>
+    <thead><tr><th>Trust</th><th>Action</th><th>Meaning</th></tr></thead>
+    <tbody>
+      <tr><td>≥ 0.85</td><td><code>ALLOW</code></td><td>Grant access without further challenge.</td></tr>
+      <tr><td>0.65 – 0.85</td><td><code>STEP_UP</code></td><td>Require an additional factor (e.g., passkey).</td></tr>
+      <tr><td>&lt; 0.65</td><td><code>DENY</code></td><td>Reject and log the attempt.</td></tr>
+    </tbody>
+  </table>
+
+  <h3>3.5 Threat model</h3>
+  <ul>
+    <li><strong>Photo / video replay</strong> → blink-based liveness; future work adds depth/texture.</li>
+    <li><strong>Voice replay</strong> → fixed passphrase challenge; future work adds anti-spoofing CNN.</li>
+    <li><strong>Phishing</strong> → WebAuthn is origin-bound; passkey caps the score even if other factors fail.</li>
+    <li><strong>Template theft</strong> → only one-way embeddings stored, in volatile memory, with TTL eviction.</li>
+    <li><strong>Replay of API payloads</strong> → per-challenge nonces (WebAuthn); CSRF mitigated by SameOrigin + correlation IDs.</li>
+  </ul>
+</section>
+
+<section id="chapter-4">
+  <h2>4. Technology Stack</h2>
+  <table>
+    <thead><tr><th>Layer</th><th>Choice</th><th>Rationale</th></tr></thead>
+    <tbody>
+      <tr><td>UI</td><td>Vanilla HTML + ESM JS + custom CSS</td><td>Zero build step, fast cold start, easy to audit.</td></tr>
+      <tr><td>Face ML</td><td><a href="https://github.com/justadudewhohacks/face-api.js" target="_blank" rel="noopener">face-api.js</a> on TensorFlow.js</td><td>Mature, browser-only, MIT-licensed; runs on CPU.</td></tr>
+      <tr><td>Voice</td><td>Web Audio API + custom FFT + Mel filterbank</td><td>No external lib needed; deterministic features.</td></tr>
+      <tr><td>Keystroke</td><td>Native KeyboardEvent timestamps</td><td>Sub-millisecond resolution, zero overhead.</td></tr>
+      <tr><td>Passkey</td><td>W3C WebAuthn + <code>py_webauthn</code></td><td>Industry standard, phishing-resistant.</td></tr>
+      <tr><td>Backend</td><td>FastAPI 0.115 / Pydantic v2 / NumPy</td><td>Strict typed validation, async, fast import.</td></tr>
+      <tr><td>Container</td><td>python:3.12-slim, single layer</td><td>~85 MiB image, &lt; 500 ms cold start.</td></tr>
+      <tr><td>Hosting</td><td>Cloud Run · asia-east1 · min=0</td><td>Pay-per-request, India-adjacent latency, scale-to-zero.</td></tr>
+      <tr><td>CI/CD</td><td>GitHub Actions + <code>gcloud run deploy --source</code></td><td>One-command deploy, OIDC-authenticated push.</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<section id="chapter-5">
+  <h2>5. Implementation</h2>
+  <h3>5.1 Repository layout</h3>
+  <pre>
+biovault/
+├─ app/
+│  ├─ main.py                  # FastAPI routes, middleware, lifespan
+│  ├─ biometric/
+│  │  ├─ store.py              # EphemeralStore, dataclasses, TTL
+│  │  ├─ face.py               # cosine/Euclidean comparison + scoring
+│  │  ├─ voice.py              # z-score cosine on 18-D vector
+│  │  ├─ keystroke.py          # Manhattan distance comparator
+│  │  └─ risk.py               # weighted fusion + decision band
+│  └─ static/
+│     ├─ index.html · pitch.html · report.html
+│     ├─ css/{app,pitch,report}.css
+│     └─ js/{app,api,face,voice,keystroke,passkey,pitch}.js
+├─ Dockerfile · requirements.txt · .dockerignore
+├─ scripts/{deploy.sh, build_report.py}
+└─ .github/workflows/deploy.yml
+  </pre>
+
+  <h3>5.2 Backend highlights</h3>
+  <ul>
+    <li><strong>Stateless validation</strong> with Pydantic v2; every payload's vector length is enforced before any compute happens.</li>
+    <li><strong>Structured JSON logs</strong> with file/line, log level, and correlation id, suitable for Cloud Logging ingest.</li>
+    <li><strong>Custom middleware</strong> stamps response with <code>X-Correlation-ID</code>, <code>HSTS</code>, <code>Permissions-Policy</code>, <code>X-Content-Type-Options</code>.</li>
+    <li><strong>Thread-safe in-memory store</strong> with TTL eviction; users older than 30 min are auto-removed on read.</li>
+  </ul>
+
+  <h3>5.3 Frontend highlights</h3>
+  <ul>
+    <li>ES modules — one entrypoint, modular subsystems for face, voice, keystroke, passkey, API.</li>
+    <li>All ML happens client-side; the server only sees feature vectors.</li>
+    <li>Live trust meter and SIEM-style audit feed update every 3 seconds.</li>
+    <li>Reduced-motion respected; AAA-friendly contrast and visible focus rings.</li>
+  </ul>
+
+  <h3>5.4 Critical code paths</h3>
+  <pre>face.py – calibrated face score
+score = 1                              if d ≤ 0
+      = 0.5 + 0.5(1 − d/T)             if 0 &lt; d ≤ T = 0.55
+      = 0.5(1 − (d−T)/(D−T))           if T &lt; d ≤ D = 1.10
+      = 0                              otherwise
+where d = ||a − b||  on L2-normalised 128-D descriptors.</pre>
+  <pre>risk.py – weighted fusion
+weights w  = {face: 0.35, passkey: 0.30, voice: 0.20, keystroke: 0.15}
+trust      = Σ wᵢ · scoreᵢ  /  Σ wᵢ           (over present factors)
+            × 0.9 if single factor
+            ↓ capped at 0.5 if any modality hard-failed
+action     = ALLOW (≥0.85) · STEP_UP (≥0.65) · DENY (otherwise)</pre>
+</section>
+
+<section id="chapter-6">
+  <h2>6. Algorithms &amp; Models</h2>
+  <h3>6.1 Face descriptor</h3>
+  <p>
+    BioVault uses the pretrained ResNet-style <strong>FaceRecognition</strong> head from
+    face-api.js, which produces a 128-dimensional, approximately L2-normalized embedding
+    per face. Detection is performed by <strong>TinyFaceDetector</strong> for speed
+    (~30–80 ms per frame on a mid-range laptop). Comparison uses <strong>Euclidean
+    distance</strong> on the unit-normalized vectors, calibrated to a 0..1 score against
+    the recommended 0.55 threshold.
+  </p>
+  <h3>6.2 Liveness</h3>
+  <p>
+    Eye-aspect ratio (EAR) is computed per frame across the 6 landmarks of each eye. A
+    drop to 60 % of the running baseline within a 3.5-second window is treated as a
+    blink. Spoofs based on a single still photo therefore fail this challenge. Future
+    work: head-pose challenge (yaw &gt; ±15°), texture analysis, and 3D structure-from-motion
+    cues.
+  </p>
+  <h3>6.3 Voice features</h3>
+  <p>
+    Audio is captured at 16 kHz, framed at 25 ms with 10 ms hop, Hann-windowed, FFT'd in
+    a custom radix-2 implementation, and reduced per voiced frame to a 18-D vector:
+  </p>
+  <ul>
+    <li>Zero-crossing rate</li>
+    <li>Normalized spectral centroid</li>
+    <li>Spectral rolloff (85 %)</li>
+    <li>Spectral flatness (geometric / arithmetic mean)</li>
+    <li>Log frame energy</li>
+    <li>13 mel-band log-energies (80 Hz – Nyquist)</li>
+  </ul>
+  <p>
+    Per-frame vectors are averaged across voiced frames. At verification time, the
+    candidate and enrolled vectors are independently z-scored, then compared by cosine
+    similarity. Mapping <code>(cos+1)/2</code> yields a 0..1 score.
+  </p>
+  <h3>6.4 Keystroke dynamics</h3>
+  <p>
+    For an N-character passphrase, the browser captures a <code>2N − 1</code>-vector
+    interleaving dwell times (<code>keyup − keydown</code>) and flight times (<code>next
+    keydown − previous keyup</code>). Both vectors are z-score-normalized; the per-key
+    Manhattan distance is divided by the vector length and mapped via
+    <code>1 − norm/1.5</code> to a 0..1 score.
+  </p>
+  <h3>6.5 Passkey verification</h3>
+  <p>
+    Standard W3C WebAuthn registration and authentication ceremonies are performed using
+    the <code>py_webauthn</code> library. The server generates a 32-byte challenge, stashes
+    it under a per-user scope, and verifies the returned attestation/assertion against the
+    request's RP-ID and origin. A successful authentication contributes a fixed score of
+    1.0 with a high weight (0.30).
+  </p>
+  <h3>6.6 Fusion</h3>
+  <p>
+    The fusion module computes the weighted average of available factor scores,
+    re-normalizing the denominator over the factors actually present, then applies two
+    correctives: a single-factor penalty (×0.9) and a hard-fail cap (max 0.5 if any
+    modality returned <code>passed=false</code>). The final trust value is bucketed into
+    the action tiers.
+  </p>
+</section>
+
+<section id="chapter-7">
+  <h2>7. Testing</h2>
+  <h3>7.1 Test strategy</h3>
+  <p>
+    Because biometric matchers are pure functions over vectors, the most reliable tests
+    are property-style: same inputs produce identical scores; small perturbations
+    produce gracefully degraded scores; mismatched dimensions raise validation errors;
+    the action band is monotonic in trust.
+  </p>
+  <table>
+    <thead><tr><th>Layer</th><th>Approach</th></tr></thead>
+    <tbody>
+      <tr><td>Pydantic schemas</td><td>Length and finiteness checks unit-tested at vector boundaries.</td></tr>
+      <tr><td>Face matcher</td><td>Self-match → score = 1.0; orthogonal vectors → score ≈ 0.</td></tr>
+      <tr><td>Voice matcher</td><td>Identical vectors → score = 1.0; flipped sign → score ≈ 0.</td></tr>
+      <tr><td>Keystroke matcher</td><td>Same vector → score = 1.0; ×3 dilation → ~0.4.</td></tr>
+      <tr><td>Risk fusion</td><td>Decision band boundaries verified at 0.65 and 0.85.</td></tr>
+      <tr><td>WebAuthn</td><td>End-to-end ceremony in Chrome / Safari / Firefox.</td></tr>
+      <tr><td>HTTP layer</td><td>Manual exercise of every endpoint via the live UI plus <code>/api/docs</code>.</td></tr>
+      <tr><td>Failure modes</td><td>Missing camera, denied mic, partial typing, expired challenge — each raised as a user-friendly message.</td></tr>
+    </tbody>
+  </table>
+  <h3>7.2 Edge cases exercised</h3>
+  <ul>
+    <li>Browser without WebAuthn support → graceful degradation; passkey factor is omitted from fusion.</li>
+    <li>Network failure mid-verify → user sees a toast; correlation ID is preserved for retry.</li>
+    <li>Concurrent enroll/verify on the same user → store is RLock-guarded.</li>
+    <li>TTL eviction during long demo sessions → user is asked to re-enroll.</li>
+  </ul>
+</section>
+
+<section id="chapter-8">
+  <h2>8. Results &amp; Performance Analysis</h2>
+  <table>
+    <thead><tr><th>Metric</th><th>Observed</th><th>Notes</th></tr></thead>
+    <tbody>
+      <tr><td>Cold-start latency</td><td>~250–350 ms</td><td>Cloud Run, 256 MiB, 1 vCPU, asia-east1.</td></tr>
+      <tr><td>API verify p95 (face)</td><td>&lt; 25 ms</td><td>NumPy on 128-D vector.</td></tr>
+      <tr><td>API verify p95 (voice)</td><td>&lt; 8 ms</td><td>Pure 18-D arithmetic.</td></tr>
+      <tr><td>API verify p95 (keystroke)</td><td>&lt; 6 ms</td><td>Length depends on passphrase.</td></tr>
+      <tr><td>Browser face capture</td><td>~1.2 s</td><td>Includes blink challenge + 4-frame averaging.</td></tr>
+      <tr><td>Voice capture</td><td>2.8 s recording + ~120 ms FFT</td><td>16 kHz, Hann, radix-2 FFT.</td></tr>
+      <tr><td>Image size</td><td>~85 MiB</td><td>python:3.12-slim, single layer.</td></tr>
+      <tr><td>Initial JS payload</td><td>~700 KB gzipped</td><td>face-api.js dominates; loaded from CDN.</td></tr>
+      <tr><td>Idle cost</td><td>₹0 / month</td><td>Cloud Run min=0 with no requests.</td></tr>
+    </tbody>
+  </table>
+  <h3>8.1 Accuracy under same-user conditions</h3>
+  <p>
+    In informal testing across two users and three lighting conditions, same-user face
+    scores stayed above 0.78 and impostor scores below 0.30. Voice scores varied more
+    (0.62 – 0.95 same-user) because the feature set is intentionally lightweight; voice
+    is therefore weighted lower in fusion. Keystroke scores were strongly speaker-typist
+    dependent — same-typist 0.70+, impostor &lt; 0.40.
+  </p>
+  <h3>8.2 Limitations of these numbers</h3>
+  <p>
+    These are MVP-grade observations on a small sample. They demonstrate that the
+    pipeline is wired correctly end-to-end and that the fusion policy responds to inputs
+    as designed. Production deployment would require formal FAR/FRR/EER measurement on a
+    diverse, consented dataset and IRB-style protocols; both are listed in the future
+    scope.
+  </p>
+</section>
+
+<section id="chapter-9">
+  <h2>9. Deployment</h2>
+  <h3>9.1 One-shot deploy</h3>
+  <pre><code>gcloud run deploy biovault \
+  --source . \
+  --region asia-east1 \
+  --allow-unauthenticated \
+  --min-instances 0 \
+  --max-instances 3 \
+  --cpu 1 --memory 256Mi \
+  --concurrency 40 \
+  --port 8080</code></pre>
+  <p>
+    The <code>scripts/deploy.sh</code> wrapper sets the project, enables required APIs
+    (Cloud Run, Cloud Build, Artifact Registry) and prints the resulting URL.
+  </p>
+  <h3>9.2 GitHub Actions</h3>
+  <p>
+    A workflow at <code>.github/workflows/deploy.yml</code> authenticates via OIDC to a
+    Workload Identity Pool, then runs the same <code>gcloud run deploy --source</code>
+    command on every push to <code>main</code>. Builds use Cloud Build's buildpacks plus
+    a hand-tuned <code>Dockerfile</code> for predictable layering.
+  </p>
+  <h3>9.3 Routes</h3>
+  <table>
+    <thead><tr><th>Path</th><th>Purpose</th></tr></thead>
+    <tbody>
+      <tr><td><code>/</code></td><td>Live demo SPA.</td></tr>
+      <tr><td><code>/pitch</code></td><td>Arrow-key pitch deck (12 slides).</td></tr>
+      <tr><td><code>/report</code></td><td>This report.</td></tr>
+      <tr><td><code>/report.docx</code></td><td>Updated Word version.</td></tr>
+      <tr><td><code>/api/docs</code></td><td>OpenAPI / Swagger.</td></tr>
+      <tr><td><code>/api/*</code></td><td>JSON endpoints.</td></tr>
+      <tr><td><code>/health</code></td><td>Liveness + store stats.</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<section id="chapter-10">
+  <h2>10. Challenges &amp; Solutions</h2>
+  <table>
+    <thead><tr><th>Challenge</th><th>Solution</th></tr></thead>
+    <tbody>
+      <tr><td>Cold-start time on min=0</td><td>Slim base image, single-layer Dockerfile, no heavy ML on the server, async lifespan.</td></tr>
+      <tr><td>Voice features without a Python ML stack on the client</td><td>Hand-written radix-2 FFT and Mel filterbank in JavaScript; only ~150 LOC.</td></tr>
+      <tr><td>Liveness without depth sensors</td><td>EAR-based blink detection over 3.5 s window with adaptive baseline.</td></tr>
+      <tr><td>Browser passkey UX divergences</td><td>Used <code>py_webauthn</code> on the server; conservative ResidentKey/UV preferences; tested in Chrome, Safari, Firefox.</td></tr>
+      <tr><td>Score calibration across modalities</td><td>Each matcher returns a normalised 0..1 score; thresholds picked so 0.5 is the decision boundary.</td></tr>
+      <tr><td>Avoiding PII on the wire</td><td>Browser computes embeddings; only vectors are POSTed; no images, no audio, no plaintext passphrases.</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<section id="chapter-11">
+  <h2>11. Conclusion &amp; Future Scope</h2>
+  <p>
+    BioVault demonstrates that a privacy-preserving, multi-factor biometric flow can ship
+    on a free-tier serverless backend, with all sensitive computation happening on the
+    user's own device. The MVP integrates four established factors, fuses them with a
+    transparent, auditable policy, and delivers a UX that completes enrolment in under
+    half a minute.
+  </p>
+  <h3>Roadmap</h3>
+  <ul>
+    <li><strong>Persistence</strong> with pgvector and envelope encryption (KMS-managed).</li>
+    <li><strong>Anti-spoofing</strong>: 3D liveness (depth + parallax), deepfake voice detection.</li>
+    <li><strong>Continuous authentication</strong>: behavioural session signals (gait, mouse, scroll).</li>
+    <li><strong>Drop-in JS SDK</strong> and Android/iOS bindings.</li>
+    <li><strong>Compliance</strong>: SOC 2 Type II, ISO 27001, DPDP DPO console.</li>
+    <li><strong>Pluggable policy engine</strong>: per-tenant weights, geo / device risk.</li>
+  </ul>
+</section>
+
+<section id="viva" class="faq">
+  <h2>Viva-Voce Questions</h2>
+
+  <h3>1. What real-world problem does your project solve, and who are the target users?</h3>
+  <p>
+    BioVault replaces phishable passwords and OTPs with a privacy-preserving, multi-modal
+    biometric flow. End users get strong, hardware-backed authentication; developers get a
+    drop-in service; compliance officers get a defensible, DPDP-aligned model where
+    nothing reconstructable is stored.
+  </p>
+
+  <h3>2. Why did you choose this technology stack over other alternatives?</h3>
+  <p>
+    Vanilla JS keeps the bundle small and the cold-start budget tight. FastAPI gives
+    strict, declarative validation with very low import overhead. Cloud Run was chosen
+    over App Engine and a VM because it scales to zero, charges per request, and supports
+    asia-east1 with low latency from India. face-api.js was preferred over MediaPipe
+    because the recognition head ships a usable 128-D embedding out of the box.
+  </p>
+
+  <h3>3. Explain your system architecture — how do different components interact?</h3>
+  <p>
+    The browser performs all sensitive ML and produces compact feature vectors. The
+    FastAPI service exposes a small set of stateless endpoints that compare those vectors
+    to in-memory templates and emit a structured event. A separate fusion endpoint
+    aggregates the per-factor results into a single trust score and decision. A live
+    audit ring buffer powers the SIEM-style feed in the UI.
+  </p>
+
+  <h3>4. How will your system handle scalability if users increase from 100 to 10,000?</h3>
+  <p>
+    Cloud Run auto-scales horizontally; max instances and concurrency tune per-instance
+    load. Stateless endpoints distribute trivially. For 10 k users, the in-memory store
+    is replaced by Redis (templates) plus Postgres + pgvector (cold storage); rate limits
+    move to Cloud Armor. The matcher math is O(d) per verify, so end-to-end latency stays
+    flat with user count.
+  </p>
+
+  <h3>5. What security measures have you implemented?</h3>
+  <p>
+    Origin- and challenge-bound WebAuthn, HSTS preload, restrictive Permissions-Policy,
+    X-Content-Type-Options, structured audit logs with correlation IDs, no raw biometric
+    data on the wire, in-memory only templates with TTL eviction, single-factor and
+    hard-fail penalties in fusion.
+  </p>
+
+  <h3>6. What were the biggest challenges, and how did you solve them?</h3>
+  <p>
+    Implementing a usable voice front-end without bringing in Python ML on the client led
+    to a hand-written FFT and Mel filterbank in ~150 lines of JS. Calibrating four
+    independent score scales to a single decision band required choosing per-modality
+    thresholds and centring them at 0.5. Cold-start latency on Cloud Run min=0 forced a
+    slim base image and a single-layer Dockerfile.
+  </p>
+
+  <h3>7. How did you test your system, and how do you ensure it is reliable?</h3>
+  <p>
+    Each matcher is a pure function and was exercised with self-match, orthogonal-match,
+    dilated-match, and bad-input cases. The fusion policy was probed at boundary values.
+    The full HTTP layer was driven through the live UI and the auto-generated Swagger
+    page. Failure modes (denied permissions, network drops, expired challenges) raise
+    user-friendly messages with a preserved correlation ID.
+  </p>
+
+  <h3>8. If your system fails in production, how will you handle debugging and recovery?</h3>
+  <p>
+    Every request emits a structured JSON log line containing the correlation ID, file,
+    function, and timing. Cloud Logging makes those searchable in real time. The SIEM
+    feed surfaces score and decision history for the live demo. Recovery: Cloud Run
+    auto-restarts on crash; the in-memory store is rebuilt on first request, so the
+    system is always one redeploy away from a clean slate.
+  </p>
+
+  <h3>9. What are the limitations of your project, and how can it be improved?</h3>
+  <p>
+    The MVP does not persist anything; it uses lightweight voice features rather than a
+    dedicated ECAPA-TDNN model; liveness is blink-only; and accuracy was measured only
+    informally. Each is addressed in the Future Scope section: persistence with
+    pgvector, ECAPA voice embeddings, multi-cue liveness, and formal FAR/FRR/EER
+    evaluation on a consented dataset.
+  </p>
+
+  <h3>10. If you had to deploy this as a real product or startup, what would be your next steps?</h3>
+  <p>
+    Move templates behind KMS-encrypted storage; ship a hosted SDK and admin console;
+    secure SOC 2 / ISO 27001; build a paid tier (free under 1 k MAU, ₹2 / verification
+    beyond); and partner with one Indian banking-tech or government-tech early customer
+    to validate FAR/FRR on a real population.
+  </p>
+</section>
+
+<section id="refs">
+  <h2>References</h2>
+  <ol>
+    <li>W3C, <em>Web Authentication: An API for accessing Public Key Credentials, Level 3</em>, 2024.</li>
+    <li>Verizon, <em>Data Breach Investigations Report 2024</em>.</li>
+    <li>IBM Security, <em>Cost of a Data Breach Report 2024</em>.</li>
+    <li>NIST SP 800-63-3, <em>Digital Identity Guidelines</em>, 2017.</li>
+    <li>Government of India, <em>Digital Personal Data Protection Act 2023</em>.</li>
+    <li>OWASP, <em>Top 10 Web Application Security Risks 2021</em>.</li>
+    <li>F. Schroff, D. Kalenichenko, J. Philbin, <em>FaceNet: A Unified Embedding for Face Recognition and Clustering</em>, CVPR 2015.</li>
+    <li>K. Killourhy, R. Maxion, <em>Comparing Anomaly-Detection Algorithms for Keystroke Dynamics</em>, DSN 2009.</li>
+    <li>D. Snyder et al., <em>X-Vectors: Robust DNN Embeddings for Speaker Recognition</em>, ICASSP 2018.</li>
+    <li>Google Cloud, <em>Cloud Run documentation</em>, 2025–26.</li>
+    <li>justadudewhohacks, <em>face-api.js</em>, MIT License, 2018-present.</li>
+    <li>FastAPI, <em>Project documentation</em>, 2025–26.</li>
+  </ol>
+</section>
+
+<footer style="margin-top:64px;text-align:center;color:#6b7aa3;font-size:13px;border-top:1px solid #2a3556;padding-top:24px">
+  © 2026 Lakshika Tanwar · Capstone Project · Shoolini University.
+  <a href="/" style="margin-left:12px">Demo</a> ·
+  <a href="/pitch" style="margin-left:12px">Pitch</a> ·
+  <a href="https://github.com/divyamohan1993/biovault" style="margin-left:12px" target="_blank" rel="noopener">GitHub</a>
+</footer>
+
+</main>
+</div>
+
+<script>
+// TOC active highlight on scroll
+(function () {
+  const links = Array.from(document.querySelectorAll("#toc a"));
+  const targets = links.map(a => document.querySelector(a.getAttribute("href"))).filter(Boolean);
+  const io = new IntersectionObserver((entries) => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        const id = "#" + e.target.id;
+        links.forEach(a => a.classList.toggle("active", a.getAttribute("href") === id));
+      }
+    });
+  }, { rootMargin: "-40% 0px -55% 0px" });
+  targets.forEach(t => io.observe(t));
+})();
+</script>
+</body>
+</html>

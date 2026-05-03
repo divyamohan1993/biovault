@@ -1,0 +1,121 @@
+/* Pitch deck — full-bleed slides, arrow keys, projector-friendly. */
+
+html, body {
+  margin: 0; height: 100%; overflow: hidden;
+  background: #05080f; color: #e7eefc;
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+.deck {
+  position: relative; width: 100vw; height: 100vh;
+  background: radial-gradient(1400px 800px at 80% -10%, rgba(124, 92, 255, 0.18), transparent 60%),
+              radial-gradient(900px 600px at -10% 110%, rgba(0, 229, 255, 0.18), transparent 60%);
+}
+
+.slide {
+  position: absolute; inset: 0;
+  display: flex; flex-direction: column; justify-content: center;
+  padding: 72px clamp(48px, 8vw, 140px);
+  opacity: 0; transform: translateX(40px) scale(0.99);
+  transition: opacity 0.45s ease, transform 0.55s cubic-bezier(0.2, 0.8, 0.2, 1);
+  pointer-events: none;
+}
+.slide.active { opacity: 1; transform: translateX(0) scale(1); pointer-events: auto; }
+.slide.prev { transform: translateX(-40px) scale(0.99); }
+
+.eyebrow {
+  font-size: 13px; font-weight: 700; letter-spacing: 0.18em; text-transform: uppercase;
+  color: #00e5ff; margin-bottom: 14px;
+}
+.slide h1 {
+  font-size: clamp(40px, 6.5vw, 92px); line-height: 1.02; margin: 0 0 24px;
+  letter-spacing: -0.025em; font-weight: 800;
+  background: linear-gradient(120deg, #fff 0%, #b3c8ff 60%, #00e5ff 100%);
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+}
+.slide h2 {
+  font-size: clamp(28px, 3.5vw, 44px); margin: 0 0 16px; letter-spacing: -0.02em; line-height: 1.1;
+}
+.slide p { font-size: clamp(18px, 1.6vw, 22px); color: #c5d2f0; max-width: 64ch; line-height: 1.45; }
+.slide ul { font-size: clamp(18px, 1.6vw, 22px); color: #c5d2f0; line-height: 1.5; padding-left: 20px; }
+.slide li { margin-bottom: 8px; }
+.slide .accent { color: #00e5ff; }
+
+.kicker {
+  display: inline-block; padding: 6px 12px; border-radius: 999px;
+  background: rgba(0, 229, 255, 0.12); color: #00e5ff;
+  border: 1px solid rgba(0, 229, 255, 0.3);
+  font-size: 12px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase;
+  margin-bottom: 24px;
+}
+
+/* grid layouts */
+.cols { display: grid; gap: 24px; }
+.cols.c2 { grid-template-columns: 1fr 1fr; }
+.cols.c3 { grid-template-columns: repeat(3, 1fr); }
+.cols.c4 { grid-template-columns: repeat(4, 1fr); }
+
+.card {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 16px; padding: 20px;
+  backdrop-filter: blur(12px);
+}
+.card h3 { margin: 0 0 8px; font-size: 18px; color: #fff; }
+.card p { margin: 0; font-size: 14px; color: #a4b0d2; }
+.card .num {
+  font-family: "JetBrains Mono", monospace;
+  font-size: clamp(28px, 3vw, 42px); color: #00e5ff;
+  margin-bottom: 6px; line-height: 1;
+}
+
+/* progress */
+.progress {
+  position: fixed; left: 0; right: 0; bottom: 0; height: 4px;
+  background: rgba(255, 255, 255, 0.05);
+}
+.progress > .bar {
+  height: 100%; background: linear-gradient(90deg, #00e5ff, #7c5cff);
+  transition: width 0.4s ease;
+}
+
+/* footer */
+.foot {
+  position: fixed; bottom: 16px; left: 24px; right: 24px;
+  display: flex; align-items: center; justify-content: space-between;
+  font-family: "JetBrains Mono", monospace; font-size: 12px; color: #6b7aa3;
+}
+.foot .ctrl { display: flex; gap: 8px; }
+.foot .ctrl kbd {
+  display: inline-flex; align-items: center; justify-content: center;
+  min-width: 24px; padding: 3px 8px; border-radius: 6px;
+  background: rgba(255, 255, 255, 0.06); border: 1px solid rgba(255, 255, 255, 0.12);
+  color: #c5d2f0; font: inherit; font-size: 11px;
+}
+
+/* arch diagram */
+.arch {
+  display: grid; grid-template-columns: 1fr 1fr 1fr;
+  gap: 16px; align-items: stretch;
+}
+.arch .node {
+  padding: 16px; border-radius: 12px;
+  background: rgba(255, 255, 255, 0.04); border: 1px solid rgba(255, 255, 255, 0.1);
+  text-align: center;
+}
+.arch .node strong { display: block; font-size: 14px; margin-bottom: 4px; }
+.arch .node small { color: #a4b0d2; font-size: 12px; }
+.arch .arrow { text-align: center; align-self: center; color: #00e5ff; font-size: 24px; }
+
+/* big number */
+.bignum {
+  font-size: clamp(80px, 12vw, 200px); font-weight: 900; line-height: 0.9;
+  background: linear-gradient(135deg, #00e5ff, #7c5cff);
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+  margin: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .slide { transition: none; }
+}

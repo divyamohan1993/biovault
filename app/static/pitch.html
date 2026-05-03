@@ -1,0 +1,163 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>BioVault — Pitch</title>
+<meta name="description" content="Pitch deck for BioVault, multi-modal biometric authentication MVP." />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&family=JetBrains+Mono:wght@400;600&display=swap" />
+<link rel="stylesheet" href="/static/css/pitch.css" />
+</head>
+<body>
+<div class="deck" id="deck" tabindex="0" aria-label="Pitch deck — use arrow keys to navigate">
+
+  <!-- 01 -->
+  <section class="slide" data-i="0">
+    <span class="kicker">Capstone · B.Tech CSE Cloud Computing · 2022–2026</span>
+    <h1>Who you are<br/>beats what you know.</h1>
+    <p>BioVault is a multi-modal biometric security application that fuses face, voice, keystroke rhythm, and a hardware-backed passkey into a single risk-adaptive trust score.</p>
+    <p style="margin-top:24px;font-family:'JetBrains Mono',monospace;font-size:14px;color:#6b7aa3">Lakshika Tanwar · GF202220476 · Shoolini University</p>
+  </section>
+
+  <!-- 02 problem -->
+  <section class="slide" data-i="1">
+    <span class="eyebrow">The problem</span>
+    <h2>Passwords are the weakest link.</h2>
+    <div class="cols c3" style="margin-top:24px">
+      <div class="card"><div class="num">81%</div><h3>of breaches</h3><p>involve weak or stolen passwords (Verizon DBIR).</p></div>
+      <div class="card"><div class="num">23B+</div><h3>credentials leaked</h3><p>circulate on the dark web today.</p></div>
+      <div class="card"><div class="num">$4.88M</div><h3>average breach cost</h3><p>per IBM Cost of a Data Breach 2024.</p></div>
+    </div>
+    <p style="margin-top:28px">SMS OTP is phishable. TOTP is shareable. Even most "biometrics" are a single factor with no liveness check.</p>
+  </section>
+
+  <!-- 03 insight -->
+  <section class="slide" data-i="2">
+    <span class="eyebrow">The insight</span>
+    <h2>Identity isn't one signal — it's a <span class="accent">chorus</span>.</h2>
+    <p>Faces can be spoofed, voices can be deepfaked, keystrokes can be observed, and even passkeys can be lost. But all four together, weighted and calibrated to context, make a much harder target.</p>
+    <p>BioVault treats each factor as evidence, fuses them into a continuous trust score, and adapts the action — allow, step-up, or deny — based on the situation.</p>
+  </section>
+
+  <!-- 04 solution -->
+  <section class="slide" data-i="3">
+    <span class="eyebrow">The solution</span>
+    <h2>Four factors. One trust score. Three actions.</h2>
+    <div class="cols c4" style="margin-top:24px">
+      <div class="card"><h3>Face + Liveness</h3><p>128-D descriptor with blink challenge — runs in your browser. <span class="accent">w=0.35</span></p></div>
+      <div class="card"><h3>Voice biometrics</h3><p>Spectral + mel features from a 3-sec passphrase. <span class="accent">w=0.20</span></p></div>
+      <div class="card"><h3>Keystroke rhythm</h3><p>Dwell + flight times for a fixed phrase. <span class="accent">w=0.15</span></p></div>
+      <div class="card"><h3>Passkey (WebAuthn)</h3><p>Phishing-resistant hardware factor. <span class="accent">w=0.30</span></p></div>
+    </div>
+    <p style="margin-top:24px">Trust ≥ 0.85 → ALLOW · 0.65–0.85 → STEP-UP · &lt; 0.65 → DENY</p>
+  </section>
+
+  <!-- 05 architecture -->
+  <section class="slide" data-i="4">
+    <span class="eyebrow">Architecture</span>
+    <h2>Stateless, scale-to-zero, local-first.</h2>
+    <div class="arch" style="margin-top:24px">
+      <div class="node"><strong>Browser</strong><small>face-api.js · Web Audio · WebAuthn · keystroke timing</small></div>
+      <div class="arrow">→</div>
+      <div class="node"><strong>FastAPI on Cloud Run</strong><small>asia-east1 · min=0 · in-memory store · structured logs</small></div>
+    </div>
+    <ul style="margin-top:24px">
+      <li>All ML inference runs <strong>in the browser</strong>; raw frames never leave the device.</li>
+      <li>Server stores only the <strong>128-D face descriptor</strong>, an <strong>18-D voice vector</strong>, a <strong>timing vector</strong>, and a <strong>passkey public key</strong>.</li>
+      <li>Templates evict in 30 minutes. <strong>Nothing is persisted.</strong></li>
+    </ul>
+  </section>
+
+  <!-- 06 stack -->
+  <section class="slide" data-i="5">
+    <span class="eyebrow">Stack</span>
+    <h2>Boring tech, deployed well.</h2>
+    <div class="cols c3" style="margin-top:24px">
+      <div class="card"><h3>Frontend</h3><p>Vanilla HTML/CSS/ESM JS · face-api.js · Web Audio API · WebAuthn · zero build step</p></div>
+      <div class="card"><h3>Backend</h3><p>Python 3.12 · FastAPI · Pydantic v2 · NumPy · py_webauthn · uvicorn</p></div>
+      <div class="card"><h3>Infra</h3><p>Cloud Run · asia-east1 · Cloud Build · Artifact Registry · GitHub Actions OIDC</p></div>
+    </div>
+  </section>
+
+  <!-- 07 user flow -->
+  <section class="slide" data-i="6">
+    <span class="eyebrow">User flow</span>
+    <h2>Three taps. Sub-second decision.</h2>
+    <div class="cols c2">
+      <div class="card"><h3>Enroll</h3><p>1. Pick a name → 2. Look at the camera, blink → 3. Speak the phrase → 4. Type the phrase → 5. Touch ID / Windows Hello.</p></div>
+      <div class="card"><h3>Verify</h3><p>Same factors, any subset. The aggregate trust score updates live, and the adaptive policy decides allow / step-up / deny.</p></div>
+    </div>
+    <p style="margin-top:24px">Onboarding under 30 seconds. Verification under 3 seconds. Works on a slow phone with a flaky 3G link.</p>
+  </section>
+
+  <!-- 08 security -->
+  <section class="slide" data-i="7">
+    <span class="eyebrow">Security &amp; privacy</span>
+    <h2>The data we don't store can't be stolen.</h2>
+    <ul>
+      <li>Face descriptors are <strong>one-way embeddings</strong> — you cannot reconstruct a usable image.</li>
+      <li>Voice features are aggregate spectral statistics, not audio.</li>
+      <li>Liveness blink defeats trivial photo-replay attacks.</li>
+      <li>WebAuthn passkeys are origin-bound and phishing-resistant by design.</li>
+      <li>HSTS, GZip, structured JSON audit logs, correlation IDs on every request.</li>
+      <li>DPDP Act 2023 / GDPR-aligned: explicit consent, real deletion, India data residency.</li>
+    </ul>
+  </section>
+
+  <!-- 09 numbers -->
+  <section class="slide" data-i="8">
+    <span class="eyebrow">Performance</span>
+    <h2>Numbers that matter.</h2>
+    <div class="cols c4">
+      <div class="card"><div class="num">~250ms</div><h3>Cold start</h3><p>Cloud Run min=0, 256 MiB.</p></div>
+      <div class="card"><div class="num">&lt;30ms</div><h3>API p95</h3><p>per modality verify.</p></div>
+      <div class="card"><div class="num">2.8s</div><h3>Voice capture</h3><p>16 kHz, FFT in JS.</p></div>
+      <div class="card"><div class="num">128-D</div><h3>Face descriptor</h3><p>L2-normalized.</p></div>
+    </div>
+  </section>
+
+  <!-- 10 demo -->
+  <section class="slide" data-i="9">
+    <span class="eyebrow">Live demo</span>
+    <h2>Open <span class="accent">/</span> in another tab.</h2>
+    <p>Grant camera + microphone access. Create a user, enroll all four factors, then verify any subset — watch the trust meter and audit log update in real time.</p>
+    <p style="margin-top:24px">Source · <span class="accent">github.com/divyamohan1993/biovault</span></p>
+    <p>Report · <span class="accent">/report</span> · API docs · <span class="accent">/api/docs</span></p>
+  </section>
+
+  <!-- 11 future -->
+  <section class="slide" data-i="10">
+    <span class="eyebrow">What's next</span>
+    <h2>From MVP to product.</h2>
+    <div class="cols c3">
+      <div class="card"><h3>Persistence</h3><p>Postgres with pgvector + envelope-encrypted templates.</p></div>
+      <div class="card"><h3>Anti-spoofing</h3><p>3D depth + texture analysis · deepfake detection on voice.</p></div>
+      <div class="card"><h3>Continuous auth</h3><p>Behavioral session signals: gait, scroll, mouse, app context.</p></div>
+      <div class="card"><h3>SDK</h3><p>Drop-in JS SDK for any web/mobile app to add BioVault auth.</p></div>
+      <div class="card"><h3>Compliance</h3><p>SOC 2, ISO 27001, DPDP DPO console.</p></div>
+      <div class="card"><h3>Pricing</h3><p>Free under 1k MAU · ₹2 per verification beyond.</p></div>
+    </div>
+  </section>
+
+  <!-- 12 thanks -->
+  <section class="slide" data-i="11">
+    <span class="eyebrow">Thank you</span>
+    <h1>Questions?</h1>
+    <p style="margin-top:24px;font-family:'JetBrains Mono',monospace;color:#6b7aa3">Lakshika Tanwar · GF202220476 · Shoolini University</p>
+  </section>
+
+</div>
+
+<div class="progress" aria-hidden="true"><div class="bar" id="bar"></div></div>
+<div class="foot" aria-hidden="true">
+  <span id="counter">1 / 12</span>
+  <span class="ctrl">
+    <kbd>←</kbd><kbd>→</kbd> navigate &nbsp; <kbd>Home</kbd>/<kbd>End</kbd> jump &nbsp; <kbd>F</kbd> fullscreen
+  </span>
+</div>
+
+<script src="/static/js/pitch.js"></script>
+</body>
+</html>

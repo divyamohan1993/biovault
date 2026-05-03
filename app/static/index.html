@@ -1,0 +1,208 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="theme-color" content="#0a0e1a" />
+<title>BioVault — Multi-Modal Biometric Security</title>
+<meta name="description" content="Live demo of multi-modal biometric authentication: face, voice, keystroke, passkey. Cloud Run MVP, in-memory only." />
+<meta property="og:title" content="BioVault — Multi-Modal Biometric Security" />
+<meta property="og:description" content="Face + voice + keystroke + passkey biometric authentication, live on Cloud Run." />
+<meta property="og:type" content="website" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" />
+<link rel="stylesheet" href="/static/css/app.css" />
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml;utf8,&lt;svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'&gt;&lt;defs&gt;&lt;linearGradient id='g' x1='0' x2='1' y1='0' y2='1'&gt;&lt;stop offset='0' stop-color='%2300e5ff'/&gt;&lt;stop offset='1' stop-color='%237c5cff'/&gt;&lt;/linearGradient&gt;&lt;/defs&gt;&lt;rect width='64' height='64' rx='14' fill='url(%23g)'/&gt;&lt;path d='M20 20c0-4 4-8 12-8s12 4 12 8v8c0 12-12 20-12 20S20 40 20 28z' fill='none' stroke='%230a0e1a' stroke-width='4' stroke-linejoin='round'/&gt;&lt;/svg&gt;" />
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  "name": "BioVault",
+  "applicationCategory": "SecurityApplication",
+  "operatingSystem": "Web",
+  "description": "Multi-modal biometric authentication MVP demonstrating face, voice, keystroke, and passkey factors.",
+  "author": { "@type": "Person", "name": "Lakshika Tanwar" }
+}
+</script>
+</head>
+<body>
+<a href="#main" class="skip-link">Skip to content</a>
+
+<nav class="nav" aria-label="Primary">
+  <span class="brand"><span class="logo" aria-hidden="true"></span> BioVault</span>
+  <span style="color:var(--fg-mute);font-family:var(--mono);font-size:12px">v<span id="ver">1.0</span></span>
+  <div class="links">
+    <a href="/" class="active">App</a>
+    <a href="/pitch">Pitch</a>
+    <a href="/report">Report</a>
+    <a href="/api/docs">API</a>
+    <a href="https://github.com/divyamohan1993/biovault" rel="noopener" target="_blank">GitHub</a>
+  </div>
+</nav>
+
+<main id="main" class="container">
+
+  <section class="hero">
+    <div>
+      <h1>Who you are <br />beats what you know.</h1>
+      <p class="lead">
+        BioVault is a multi-modal biometric authentication MVP. It combines
+        <strong>face</strong>, <strong>voice</strong>, <strong>keystroke
+        rhythm</strong>, and a hardware-backed <strong>passkey</strong> into a
+        single risk-adaptive trust score, computed live in the browser and on
+        a stateless Cloud Run backend.
+      </p>
+      <div class="cta">
+        <button class="btn primary" id="cta-start">Start the demo</button>
+        <a class="btn ghost" href="/pitch">Watch the pitch</a>
+        <a class="btn ghost" href="/report">Read the report</a>
+      </div>
+    </div>
+    <aside class="live-card" aria-label="Live status">
+      <div class="row" style="justify-content:space-between">
+        <strong>Live trust signal</strong>
+        <span style="color:var(--fg-mute);font-family:var(--mono);font-size:12px" id="live-action">— idle —</span>
+      </div>
+      <div class="meter ok"><div class="fill" id="live-trust" style="width:0%"></div></div>
+      <div class="metric-grid">
+        <div class="metric"><div class="k">Face</div><div class="v" id="m-face">—</div></div>
+        <div class="metric"><div class="k">Voice</div><div class="v" id="m-voice">—</div></div>
+        <div class="metric"><div class="k">Keystroke</div><div class="v" id="m-keys">—</div></div>
+      </div>
+      <div class="metric-grid" style="grid-template-columns:1fr 1fr">
+        <div class="metric"><div class="k">Passkey</div><div class="v" id="m-passkey">—</div></div>
+        <div class="metric"><div class="k">Trust</div><div class="v" id="m-trust">0%</div></div>
+      </div>
+    </aside>
+  </section>
+
+  <!-- 1. Identity -->
+  <section class="panel" id="step-id">
+    <header>
+      <span class="step">1</span>
+      <h2>Pick or create an identity</h2>
+      <span class="sub">In-memory only. No data persists.</span>
+    </header>
+    <div class="row">
+      <input type="text" id="user-label" placeholder="Display name (e.g., Lakshika)" maxlength="60" autocomplete="off" />
+      <button class="btn primary" id="btn-create-user">Create user</button>
+    </div>
+    <div class="users" id="user-list" aria-live="polite"></div>
+  </section>
+
+  <!-- 2. Factors -->
+  <section class="panel" id="step-factors">
+    <header>
+      <span class="step">2</span>
+      <h2>Enroll biometric factors</h2>
+      <span class="sub" id="factor-active-user">Select a user first.</span>
+    </header>
+
+    <div class="cols">
+      <!-- Face -->
+      <div class="tile" id="tile-face" data-factor="face">
+        <span class="badge">Face</span>
+        <h3>Facial recognition + liveness</h3>
+        <div class="desc">Local 128-D descriptor (face-api.js). Liveness via blink challenge. No image leaves your device.</div>
+        <div class="video-wrap" hidden id="face-video-wrap">
+          <video id="face-video" autoplay playsinline muted></video>
+          <canvas id="face-canvas" class="overlay"></canvas>
+          <div class="liveness-prompt" id="face-prompt">Look at the camera</div>
+        </div>
+        <div class="row">
+          <button class="btn" id="btn-face-enroll">Enroll face</button>
+          <button class="btn" id="btn-face-verify" disabled>Verify</button>
+        </div>
+        <div class="meter"><div class="fill" id="face-meter" style="width:0%"></div></div>
+        <div class="status" id="face-status">Not enrolled</div>
+      </div>
+
+      <!-- Voice -->
+      <div class="tile" id="tile-voice" data-factor="voice">
+        <span class="badge">Voice</span>
+        <h3>Voice biometrics</h3>
+        <div class="desc">Speak the phrase. We extract spectral features in-browser and compare to your enrolled vector.</div>
+        <div style="font-family:var(--mono);background:var(--bg-2);padding:8px 12px;border-radius:8px;border:1px solid var(--line);color:var(--accent);text-align:center" id="voice-phrase">"My voice is my password, verify me."</div>
+        <div class="row">
+          <button class="btn" id="btn-voice-enroll">Record &amp; enroll</button>
+          <button class="btn" id="btn-voice-verify" disabled>Record &amp; verify</button>
+        </div>
+        <div class="meter"><div class="fill" id="voice-meter" style="width:0%"></div></div>
+        <div class="status" id="voice-status">Not enrolled</div>
+      </div>
+
+      <!-- Keystroke -->
+      <div class="tile" id="tile-keys" data-factor="keystroke">
+        <span class="badge">Keystroke</span>
+        <h3>Typing rhythm</h3>
+        <div class="desc">Your dwell + flight time across a fixed passphrase. The fingerprint nobody can record.</div>
+        <label class="field">
+          <span class="lbl">Passphrase (used for both enrollment and verification)</span>
+          <input type="text" id="kbd-passphrase" value="biovault demo" maxlength="32" />
+        </label>
+        <input type="text" id="kbd-input" placeholder="Type the passphrase here…" autocomplete="off" />
+        <div class="kbd-feedback" id="kbd-feedback" aria-hidden="true"></div>
+        <div class="row">
+          <button class="btn" id="btn-keys-enroll">Enroll typing</button>
+          <button class="btn" id="btn-keys-verify" disabled>Verify typing</button>
+        </div>
+        <div class="meter"><div class="fill" id="keys-meter" style="width:0%"></div></div>
+        <div class="status" id="keys-status">Not enrolled</div>
+      </div>
+
+      <!-- Passkey -->
+      <div class="tile" id="tile-passkey" data-factor="passkey">
+        <span class="badge">Passkey</span>
+        <h3>WebAuthn passkey</h3>
+        <div class="desc">Hardware-backed factor. Touch ID / Windows Hello / security key. Phishing-resistant by design.</div>
+        <div class="row">
+          <button class="btn" id="btn-passkey-enroll">Register passkey</button>
+          <button class="btn" id="btn-passkey-verify" disabled>Authenticate</button>
+        </div>
+        <div class="meter"><div class="fill" id="passkey-meter" style="width:0%"></div></div>
+        <div class="status" id="passkey-status">Not enrolled</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 3. Decision -->
+  <section class="panel" id="step-decide">
+    <header>
+      <span class="step">3</span>
+      <h2>Adaptive risk decision</h2>
+      <span class="sub">Weights: face 0.35 · passkey 0.30 · voice 0.20 · keystroke 0.15</span>
+    </header>
+    <p style="margin-top:0;color:var(--fg-dim)">After at least one verification, BioVault aggregates available factor scores into a trust value, then maps it to an allow / step-up / deny action.</p>
+    <button class="btn primary" id="btn-decide" disabled>Compute decision</button>
+    <div class="decision" id="decision-row" role="status" aria-live="polite">
+      <span class="dot"></span>
+      <span class="label" id="decision-label">No decision yet</span>
+      <span class="val" id="decision-val">trust=0.000</span>
+    </div>
+  </section>
+
+  <!-- 4. SIEM -->
+  <section class="panel" id="step-siem">
+    <header>
+      <span class="step">4</span>
+      <h2>Live audit feed</h2>
+      <span class="sub">Auto-refreshes every 3s · in-memory · capped at 500 events</span>
+    </header>
+    <div class="siem" id="siem-log" aria-live="polite"></div>
+  </section>
+
+  <footer>
+    <p>BioVault MVP · Capstone by <strong>Lakshika Tanwar</strong> (GF202220476) · B.Tech CSE Cloud Computing · Shoolini University.</p>
+    <p>Deployed on Google Cloud Run · asia-east1 · scale-to-zero · in-memory state.</p>
+  </footer>
+
+</main>
+
+<div class="toasts" id="toasts" aria-live="polite"></div>
+
+<!-- face-api.js (TinyFaceDetector + recognition + landmarks) -->
+<script defer src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
+<script type="module" src="/static/js/app.js"></script>
+</body>
+</html>
