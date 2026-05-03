@@ -8,4 +8,5 @@ __pycache__
 .vscode
 docs
 *.docx
+!app/static/*.docx
 node_modules

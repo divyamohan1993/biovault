@@ -12,6 +12,7 @@ docs
 scripts
 *.md
 *.docx
+!app/static/*.docx
 LICENSE
 .gcloudignore
 .dockerignore
